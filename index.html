@@ -321,7 +321,7 @@ input[type=text]::-webkit-input-placeholder{font-size:9.5px;color:#c4c8ce}
 }
 .cprev .s{font-family:var(--uiff,inherit);font-size:10px;line-height:1.1;white-space:nowrap;font-weight:600}
 .cprev .s.hl{padding:2px 5px;border-radius:2px}
-.cprev .s.em{border-left:4px solid currentColor;padding-left:6px}
+.cprev .s.em{border-left:3px solid currentColor;padding-left:6px}
 .bgset{display:flex;gap:7px;flex:0 0 auto}
 .bgsw{
   width:30px;height:30px;flex:0 0 auto;
@@ -793,10 +793,12 @@ body.capturing .card{box-shadow:none;border-radius:0}
   .wide{display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:start}
   body.tabsleft .wide{grid-template-columns:420px minmax(0,1fr)}
   .stage{
-    height:100%;overflow-y:auto;overflow-x:auto;
-    display:flex;align-items:center;justify-content:center;
-    padding:40px 24px;
+    height:100%;overflow:auto;
+    display:block;                 /* 세로 가운데 정렬이 위쪽을 자르지 않도록 */
+    padding:56px 24px 40px;
+    text-align:center;
   }
+  .fitwrap{display:inline-block;text-align:left;vertical-align:top}
   .editpane{
     height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr);
     border-left:1px solid var(--line);background:var(--panel);
@@ -813,7 +815,6 @@ body.capturing .card{box-shadow:none;border-radius:0}
   }
   .panels{max-width:none;padding:0}
   .pbody{padding:16px 18px 22px}
-  .fitwrap{margin:auto}
 }
 @media (min-width:1280px){
   .wide{grid-template-columns:minmax(0,1fr) 460px}
@@ -1770,7 +1771,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
     if (!fresh.length) { sync(); return; }
     const bq = document.createElement("blockquote");
     bq.dataset.emline = color;
-    bq.setAttribute("style", "border-left:4px solid " + color + ";padding-left:.9em;margin:0 0 var(--pg);");
+    bq.setAttribute("style", "border-left:var(--emw,3px) solid " + color + ";padding-left:.9em;margin:0 0 var(--pg);");
     fresh[0].parentNode.insertBefore(bq, fresh[0]);
     fresh.forEach(b => bq.appendChild(b));
     sync();
@@ -3380,7 +3381,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
         keep.push([el, name, el.style.getPropertyValue(name)]);
         el.style.setProperty(name, (parseFloat(v) * mul) + (v.endsWith("%") ? "%" : "px"));
       };
-      ["--w","--fs","--tfs","--sfs","--pg","--px","--py","--gapt","--gaps","--srcgap","--mpy","--mpx","--mrad2"]
+      ["--w","--fs","--tfs","--sfs","--pg","--px","--py","--gapt","--gaps","--srcgap","--mpy","--mpx","--mrad2","--emw"]
         .forEach(n => scaleVar(card, n, sc));
     }
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -3694,6 +3695,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
   setVar("--gaps", "20px");
   setVar("--bfw", "400");
   setVar("--hs", "100");
+  setVar("--emw", "3px");
   setMsgPreset("imessage");
 
   sync();
@@ -3720,8 +3722,14 @@ body.capturing .card{box-shadow:none;border-radius:0}
     el.addEventListener("focus", () => {
       setTimeout(() => {
         adjustPad();
-        try { el.scrollIntoView({ block: "center" }); } catch (e) { el.scrollIntoView(); }
-      }, 100);
+        // 모바일에서 키보드가 실제로 올라온 경우에만 위치를 맞춤
+        if (!vv || window.matchMedia("(min-width:900px)").matches) return;
+        const gap = window.innerHeight - vv.height - vv.offsetTop;
+        if (gap < 80) return;
+        const r = el.getBoundingClientRect();
+        if (r.bottom <= vv.height - 8) return;      // 이미 보이면 그대로
+        try { el.scrollIntoView({ block: "nearest" }); } catch (e) {}
+      }, 120);
     });
     el.addEventListener("blur", () => setTimeout(adjustPad, 100));
   });
