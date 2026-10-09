@@ -714,14 +714,41 @@ input[type=text]::-webkit-input-placeholder{font-size:9.5px;color:#c4c8ce}
 }
 #editor .imgblk{cursor:grab;touch-action:none;user-select:none}
 #editor .imgblk.sel{outline:2px solid var(--accent);outline-offset:2px}
+/* 세로 사진: 편집기에서는 고른 쪽에 붙여 좁게 보여줌 */
+#editor .imgblk[data-orient="v"]{width:calc(var(--iwp,60) * 1%)}
+#editor .imgblk[data-orient="v"][data-iside="right"]{margin-left:auto}
+#editor .imgblk[data-orient="v"]::before{padding-top:var(--par,133.33%)}
+/* 세로 사진: 카드에서는 옆 칸에 위아래 꽉 차게 (그만큼 카드 폭이 넓어짐)
+   고른 비율 = 글이 짧을 때의 사진 모양, 글이 더 길면 사진도 아래까지 늘어남 */
+.card .imgside{display:none}
+.card.sideimg{
+  display:flex;align-items:stretch;
+  width:calc(var(--w,440px) + var(--w,440px) * var(--iwp,60) / 100 + var(--px,34px));
+}
+.card.sideimg[data-iside="right"]{flex-direction:row-reverse}
+.card.sideimg .inner{flex:0 0 var(--w,440px);width:var(--w,440px);min-width:0}
+.card.sideimg .imgside{
+  display:flex;flex-direction:column;flex:0 0 auto;
+  width:calc(var(--w,440px) * var(--iwp,60) / 100 + var(--px,34px));
+  padding:var(--py,40px) 0 var(--py,40px) var(--px,34px);
+}
+.card.sideimg[data-iside="right"] .imgside{padding:var(--py,40px) var(--px,34px) var(--py,40px) 0}
+.card .imgside .imgblk{
+  flex:1 1 auto;min-height:0;width:100%;     /* 칸 높이에 맞춰 늘거나 (지면 비율 고정일 때) 줄어듦 */
+  border-radius:12px;overflow:hidden;
+  background-repeat:no-repeat;background-size:cover;
+  background-position:var(--ix,50%) var(--iy,50%);
+}
+.card .imgside .imgblk::before{content:"";display:block;padding-top:var(--par,133.33%)}
 .imgbar{
-  position:absolute;z-index:30;display:flex;gap:3px;padding:4px;
+  position:absolute;z-index:30;display:grid;grid-template-columns:repeat(5,auto);gap:3px;padding:4px;
   background:var(--panel);border:1px solid var(--line);border-radius:9px;
   box-shadow:0 6px 18px -8px rgba(16,24,40,.35);
 }
 .imgbar[hidden]{display:none}
 .imgctl{position:absolute;z-index:31;display:flex;gap:4px}
 .imgctl[hidden]{display:none}
+.imgctl .ctlbtn[hidden]{display:none}
 .imgbar button{
   border:1px solid transparent;border-radius:6px;background:transparent;
   padding:4px 7px;font-size:8px;color:var(--muted);
@@ -775,7 +802,6 @@ body.capturing .card{box-shadow:none;border-radius:0}
   .stagefit{left:16px}
   .stageside{right:16px}
   /* 탭이 왼쪽일 때는 두 버튼 자리도 뒤바뀜 */
-  body.tabsleft .wide{grid-template-columns:420px minmax(0,1fr)}
   body.tabsleft .editpane{order:-1;border-left:0;border-right:1px solid var(--line)}
   body.tabsleft .stagefit{left:auto;right:16px}
   body.tabsleft .stageside{right:auto;left:16px}
@@ -790,7 +816,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
   input[type=text],select,.tailrow .seg button,.tailflip{height:31px}
   .btn.tall{height:33px}
   .stepper.compact,.wbtn{height:26px}
-  .wide{display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:start}
+  .wide{display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:minmax(0,1fr);align-items:start}   /* 줄 높이를 화면 높이로 고정 → 양쪽이 각자 안에서 스크롤 */
   body.tabsleft .wide{grid-template-columns:420px minmax(0,1fr)}
   .stage{
     height:100%;overflow:auto;
@@ -809,6 +835,15 @@ body.capturing .card{box-shadow:none;border-radius:0}
   }
   .tab{flex:1 1 0;padding:0 3px;height:42px;font-size:11px}
   .panelwrap{min-height:0;height:100%;overflow-y:auto}
+  /* 내용 탭: 본문 칸이 남은 높이를 채우고, 글이 길면 본문 칸 안에서 스크롤 */
+  .panels:has(> #tab-content:not([hidden])){height:100%}
+  #tab-content:not([hidden]){flex:1 0 auto;display:flex;flex-direction:column}
+  #tab-content > .pbody{flex:1 0 auto}
+  #tab-content .bodyfield{flex:1 0 auto}
+  #tab-content #editor{flex:1 1 0;min-height:190px;overflow-y:auto}
+  /* 스크롤 막대는 숨김 */
+  .panelwrap,#editor{scrollbar-width:none}
+  .panelwrap::-webkit-scrollbar,#editor::-webkit-scrollbar{display:none}
   /* 스크롤 영역에 잘리지 않도록 툴바 팝업은 아래로 열기 */
   .cmenu .cpop,.hrmenu .hrpop,.popover.row3{
     top:calc(100% + 6px);bottom:auto;
@@ -844,6 +879,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
   <button class="btn stageside" id="sideBtn">이동</button>
   <div class="fitwrap" id="fitwrap">
     <div class="card" id="card">
+      <div class="imgside" id="pvSide"></div>
       <div class="inner" id="inner">
         <div class="ttl" id="pvTitle"></div>
         <div class="sub" id="pvSub"></div>
@@ -973,6 +1009,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
 </div>
         <div id="editor" contenteditable="true" data-ph="여기에 글을 붙여넣고, 강조할 부분을 드래그해 보세요."></div>
         <div class="imgctl" id="imgCtl" hidden>
+          <button class="ctlbtn side" title="좌우 바꾸기" hidden></button>
           <button class="ctlbtn mv" title="끌어서 이동"></button>
           <button class="ctlbtn del" title="삭제"></button>
         </div>
@@ -982,6 +1019,11 @@ body.capturing .card{box-shadow:none;border-radius:0}
           <button data-ar="56.25">16:9</button>
           <button data-ar="75">4:3</button>
           <button data-ar="100">1:1</button>
+          <button data-ar="125" data-vert>4:5</button>
+          <button data-ar="133.33" data-vert>3:4</button>
+          <button data-ar="150" data-vert>2:3</button>
+          <button data-ar="177.78" data-vert>9:16</button>
+          <button data-ar="200" data-vert>1:2</button>
         </div>
         <input type="file" id="imgFile" accept="image/*" hidden>
       </div>
@@ -1392,6 +1434,7 @@ body.capturing .card{box-shadow:none;border-radius:0}
     return a || b;
   }
   const pvTitle = $("#pvTitle"), pvSub = $("#pvSub"), pvBody = $("#pvBody"), pvSource = $("#pvSource");
+  const pvSide = $("#pvSide");
   let saveScale = 2;
   let saveSeq = {};   // 이름별 저장 횟수
 
@@ -1409,10 +1452,20 @@ body.capturing .card{box-shadow:none;border-radius:0}
   /* ── 미리보기 반영 ── */
   function sync(){
     const html = editor.innerHTML.trim();
-    const bodyEmpty = editor.textContent.trim() === "" && !/<img/i.test(html);
+    let bodyEmpty = editor.textContent.trim() === "" && !/<img|imgblk/i.test(html);
     pvBody.innerHTML = bodyEmpty ? "" : html;
     pvBody.querySelectorAll("[contenteditable]").forEach(el => el.removeAttribute("contenteditable"));
     pvBody.querySelectorAll(".msgctl").forEach(el => el.remove());
+    // 세로 사진은 본문에서 빼서 카드 옆 칸으로
+    pvSide.innerHTML = "";
+    const vimg = pvBody.querySelector('.imgblk[data-orient="v"]');
+    card.classList.toggle("sideimg", !!vimg);
+    if (vimg) {
+      pvSide.appendChild(vimg);
+      card.dataset.iside = vimg.dataset.iside === "right" ? "right" : "left";
+      setVar("--iwp", String(parseFloat(vimg.style.getPropertyValue("--iwp")) || 60));
+      if (!pvBody.textContent.trim() && !pvBody.querySelector(".imgblk,.msgblk,hr")) { pvBody.innerHTML = ""; bodyEmpty = true; }
+    }
     pvBody.classList.toggle("empty", bodyEmpty);
 
     pvTitle.textContent = titleIn.value;
@@ -2253,7 +2306,6 @@ body.capturing .card{box-shadow:none;border-radius:0}
   renderMsgThemes();
 
   /* ── 블록 이동·삭제 컨트롤 ── */
-  const TAIL_HTML = '<span class="tailw" aria-hidden="true"><i class="a"></i><i class="b"></i></span>';
   const DEL_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M4.6 4.6L11.4 11.4"/><path d="M11.4 4.6L4.6 11.4"/></g></svg>';
   const SWAP_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5H12L10 3.5"/><path d="M13 10.5H4L6 12.5"/></g></svg>';
   const MOVE_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5V13.5M2.5 8H13.5"/><path d="M6 4.5L8 2.5L10 4.5"/><path d="M6 11.5L8 13.5L10 11.5"/><path d="M4.5 6L2.5 8L4.5 10"/><path d="M11.5 6L13.5 8L11.5 10"/></g></svg>';
@@ -2637,6 +2689,9 @@ body.capturing .card{box-shadow:none;border-radius:0}
     selImg = null;
   }
   imgCtl.addEventListener("pointerdown", e => e.stopPropagation());
+  const LR_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8H13.5"/><path d="M4.5 6L2.5 8L4.5 10"/><path d="M11.5 6L13.5 8L11.5 10"/></g></svg>';
+  const imgSideBtn = imgCtl.querySelector(".side");
+  imgSideBtn.innerHTML = LR_SVG;
   imgCtl.querySelector(".mv").innerHTML = MOVE_SVG;
   imgCtl.querySelector(".del").innerHTML = DEL_SVG;
   imgCtl.querySelector(".mv").addEventListener("pointerdown", e => { if (selImg) startBlockDrag(selImg, e); });
@@ -2644,35 +2699,66 @@ body.capturing .card{box-shadow:none;border-radius:0}
     if (!selImg) return;
     selImg.remove(); clearImgSel(); sync();
   });
+  // 세로 사진: 왼쪽 ↔ 오른쪽
+  imgSideBtn.addEventListener("click", () => {
+    if (!selImg) return;
+    selImg.dataset.iside = selImg.dataset.iside === "right" ? "left" : "right";
+    placeImgBar(selImg);
+    sync();
+  });
   // 선택한 이미지 오른쪽 위에 비율 바 띄우기
   function placeImgBar(blk){
     selImg = blk;
+    const vert = blk.dataset.orient === "v";
+    const br = blk.getBoundingClientRect();
+    // 본문 칸 안에서 스크롤돼 사진 윗부분이 가려지면 버튼들은 잠깐 숨김
+    const er = editor.getBoundingClientRect();
+    const vis = br.top >= er.top + 10 && br.top + 60 <= er.bottom;
+    imgBar.hidden = !vis;
+    imgCtl.hidden = !vis;
+    if (!vis) return;
     const host = imgBar.offsetParent || imgBar.parentNode;
     const hr = host.getBoundingClientRect();
-    const br = blk.getBoundingClientRect();
-    imgBar.hidden = false;
-    imgCtl.hidden = false;
+    imgSideBtn.hidden = !vert;          // 좌우 바꾸기는 세로일 때만
     const cw = imgCtl.offsetWidth;
     imgCtl.style.left = (br.right - hr.left - cw) + "px";
     imgCtl.style.top  = (br.top - hr.top - 28) + "px";
     const bw = imgBar.offsetWidth;
-    imgBar.style.left = (br.right - hr.left - bw - 8) + "px";
+    imgBar.style.left = Math.max(4, br.right - hr.left - bw - 8) + "px";
     imgBar.style.top  = (br.top - hr.top + 8) + "px";
-    const cur = parseFloat(blk.style.getPropertyValue("--ar")) || 42.86;
-    imgBar.querySelectorAll("button").forEach(b => {
-      b.setAttribute("aria-pressed", String(Math.abs(parseFloat(b.dataset.ar) - cur) < 0.5));
+    // 가로 비율은 --ar, 세로 비율은 --par 에 따로 기억
+    const cur  = parseFloat(blk.style.getPropertyValue("--ar"))  || 42.86;
+    const curV = parseFloat(blk.style.getPropertyValue("--par")) || 133.33;
+    imgBar.querySelectorAll("button[data-ar]").forEach(b => {
+      const isV = b.hasAttribute("data-vert");
+      b.setAttribute("aria-pressed", String(isV === vert && Math.abs(parseFloat(b.dataset.ar) - (isV ? curV : cur)) < 0.5));
     });
   }
   imgBar.addEventListener("pointerdown", e => e.stopPropagation());
-  imgBar.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+  // 본문 칸 안 스크롤: 사진 버튼은 사진을 따라가고, 말하는 사람 고르기 창은 닫음
+  editor.addEventListener("scroll", () => {
+    if (selImg) placeImgBar(selImg);
+    speakerPop.hidden = true;
+  }, { passive: true });
+  imgBar.querySelectorAll("button[data-ar]").forEach(b => b.addEventListener("click", () => {
     const blk = editor.querySelector(".imgblk.sel");
     if (!blk) return;
-    blk.style.setProperty("--ar", b.dataset.ar + "%");
+    if (b.hasAttribute("data-vert")) {
+      // 세로 비율: 카드 옆 칸으로 (세로 사진은 한 장만 → 다른 세로 사진은 가로로 되돌림)
+      editor.querySelectorAll('.imgblk[data-orient="v"]').forEach(o => { if (o !== blk) delete o.dataset.orient; });
+      blk.dataset.orient = "v";
+      if (!blk.dataset.iside) blk.dataset.iside = "left";
+      if (!blk.style.getPropertyValue("--iwp")) blk.style.setProperty("--iwp", "60");
+      blk.style.setProperty("--par", b.dataset.ar + "%");
+    } else {
+      delete blk.dataset.orient;        // 가로 비율을 고르면 본문 안으로
+      blk.style.setProperty("--ar", b.dataset.ar + "%");
+    }
     placeImgBar(blk);
     sync();
   }));
 
-  // 가운데 드래그 = 보이는 부분 이동 / 위아래 가장자리 드래그 = 높이 조절
+  // 가운데 드래그 = 보이는 부분 이동 / 가장자리 드래그 = 크기 조절 (가로: 위아래 → 높이, 세로: 좌우 → 폭, 비율은 그대로)
   editor.addEventListener("pointerdown", e => {
     const blk = e.target.closest && e.target.closest(".imgblk");
     if (!blk) { clearImgSel(); return; }
@@ -2683,21 +2769,32 @@ body.capturing .card{box-shadow:none;border-radius:0}
 
     const rect = blk.getBoundingClientRect();
     const EDGE = 16;
+    const vert = blk.dataset.orient === "v";
     const fromTop = (e.clientY - rect.top) < EDGE;
     const fromBottom = (rect.bottom - e.clientY) < EDGE;
-    const mode = (fromTop || fromBottom) ? "resize" : "pan";
+    const fromLeft = (e.clientX - rect.left) < EDGE;
+    const fromRight = (rect.right - e.clientX) < EDGE;
+    const mode = (vert ? (fromLeft || fromRight) : (fromTop || fromBottom)) ? "resize" : "pan";
 
     const startY = e.clientY, startX = e.clientX;
     const startAr = parseFloat(blk.style.getPropertyValue("--ar")) || 42.86;
+    const startIwp = parseFloat(blk.style.getPropertyValue("--iwp")) || 60;
     const startIx = parseFloat(blk.style.getPropertyValue("--ix"));
     const startIy = parseFloat(blk.style.getPropertyValue("--iy"));
     const sx = isNaN(startIx) ? 50 : startIx, sy = isNaN(startIy) ? 50 : startIy;
     const w = rect.width, h = rect.height;
+    const ecs = getComputedStyle(editor);
+    const ew = editor.clientWidth - parseFloat(ecs.paddingLeft) - parseFloat(ecs.paddingRight);
 
     blk.setPointerCapture(e.pointerId);
     const move = ev => {
       const dy = ev.clientY - startY, dx = ev.clientX - startX;
-      if (mode === "resize") {
+      if (mode === "resize" && vert) {
+        const delta = (fromLeft ? -dx : dx) / ew * 100;
+        const iwp = Math.min(100, Math.max(25, startIwp + delta));
+        blk.style.setProperty("--iwp", iwp.toFixed(1));
+        placeImgBar(blk);
+      } else if (mode === "resize") {
         const delta = (fromTop ? -dy : dy) / w * 100;
         const ar = Math.min(160, Math.max(25, startAr + delta));
         blk.style.setProperty("--ar", ar.toFixed(2) + "%");
